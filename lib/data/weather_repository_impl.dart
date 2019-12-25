@@ -7,6 +7,7 @@ import 'weather_repository_interface.dart';
 class WeatherRepositoryImpl implements WeatherRepository {
 
   double cachedTempCelsius;
+  double temperatureFahrenheit;
 
   @override
   Future<Weather> fetchWeather(String cityName) {
@@ -24,12 +25,14 @@ class WeatherRepositoryImpl implements WeatherRepository {
         // Since we're inside a fake repository, we need to cache the temperature
         // in order to have the same one returned in for the detailed weather
         cachedTempCelsius = 20 + random.nextInt(15) + random.nextDouble();
+        temperatureFahrenheit = (cachedTempCelsius * 1.8) + 32;
 
         // Return "fetched" weather
         return Weather(
           cityName: cityName,
           // Temperature between 20 and 35.99
           temperatureCelsius: cachedTempCelsius,
+          temperatureFahrenheit: temperatureFahrenheit
         );
       },
     );
@@ -44,7 +47,7 @@ class WeatherRepositoryImpl implements WeatherRepository {
         return Weather(
           cityName: cityName,
           temperatureCelsius: cachedTempCelsius,
-          temperatureFahrenheit: cachedTempCelsius * 1.8 + 32,
+          temperatureFahrenheit: cachedTempCelsius,
         );
       },
     );
