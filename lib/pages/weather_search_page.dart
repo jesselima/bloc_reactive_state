@@ -1,5 +1,7 @@
+import 'package:bloc_reactive_state/bloc/bloc.dart';
 import 'package:bloc_reactive_state/data/model/weather.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'weather_detail_page.dart';
 
@@ -13,8 +15,48 @@ class WeatherSearchPage extends StatelessWidget {
       body: Container(
         padding: EdgeInsets.symmetric(vertical: 16),
         alignment: Alignment.center,
-        //TODO: Display the weather and loading indicator using Bloc
-        child: buildInitialInput(),
+
+        /// From BlocBuilder source code:
+        /// [BlocBuilder] handles building a widget in response to new states.
+        /// [BlocBuilder] is analogous to [StreamBuilder] but has simplified API
+        /// to reduce the amount of boilerplate code needed as well as bloc-specific performance improvements.
+
+        /// Please refer to [BlocListener] if you want to "do" anything in response to state changes such as
+        /// navigation, showing a dialog, etc...
+        ///
+        /// If the bloc parameter is omitted, [BlocBuilder] will automatically perform a lookup using
+        /// [BlocProvider] and the current [BuildContext].
+
+        child: BlocListener<WeatherBloc, WeatherState>(
+
+          // TODO -> Navigation, Dialog, SnackBar actions must be taken from the listener, NOT from the Builder.
+          listener: (context, state) {
+            if(state is WeatherErrorState) {
+              Scaffold.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(state.message)
+                  )
+              );
+            }
+          }, // BlocListener
+
+          child: BlocBuilder<WeatherBloc, WeatherState>(
+            // ignore: missing_return
+            builder: (context, state) {
+              if(state is WeatherInitialState) {
+                return buildInitialInput();
+              } else if(state is WeatherLoadingState) {
+                return buildLoading();
+              } else if(state is WeatherLoadedState) {
+                return buildColumnWithData(context, state.weather);
+              } else if(state is WeatherErrorState) {
+                return buildInitialInput();
+              }
+            },
+          ),
+
+        ),
+
       ),
     );
   }
@@ -52,9 +94,13 @@ class WeatherSearchPage extends StatelessWidget {
           color: Colors.lightBlue[100],
           onPressed: () {
             Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => WeatherDetailPage(
-                masterWeather: weather,
-              ),
+              builder: (_) => BlocProvider.value(
+                // We are passing the already instance of the WeatherBloc to the provider
+                value: BlocProvider.of<WeatherBloc>(context),
+                child: WeatherDetailPage(
+                    masterWeather: weather
+                ),
+              )
             ));
           },
         ),
@@ -83,5 +129,10 @@ class CityInputField extends StatelessWidget {
 
   void submitCityName(BuildContext context, String cityName) {
     //TODO: Fetch the weather from the repository and display it somehow
+    // This Suppress warning should not happen
+    // ignore: close_sinks
+    final weatherBloc = BlocProvider.of<WeatherBloc>(context);
+    weatherBloc.add(GetWeatherEvent(cityName));
+
   }
 }
